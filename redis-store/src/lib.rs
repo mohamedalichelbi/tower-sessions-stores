@@ -18,10 +18,10 @@ pub enum RedisStoreError {
     Redis(#[from] fred::error::Error),
 
     #[error(transparent)]
-    Decode(#[from] rmp_serde::decode::Error),
+    Decode(serde_json::Error),
 
     #[error(transparent)]
-    Encode(#[from] rmp_serde::encode::Error),
+    Encode(serde_json::Error),
 }
 
 impl From<RedisStoreError> for session_store::Error {
@@ -74,7 +74,7 @@ impl<C: KeysInterface + Send + Sync> RedisStore<C> {
             .client
             .set(
                 record.id.to_string(),
-                rmp_serde::to_vec(&record)
+                serde_json::to_vec(&record)
                     .map_err(RedisStoreError::Encode)?
                     .as_slice(),
                 expire,
@@ -116,7 +116,7 @@ where
 
         if let Some(data) = data {
             Ok(Some(
-                rmp_serde::from_slice(&data).map_err(RedisStoreError::Decode)?,
+                serde_json::from_slice(&data).map_err(RedisStoreError::Decode)?,
             ))
         } else {
             Ok(None)
